@@ -1,31 +1,22 @@
-'use client'; 
-import "./globals.css";//this was missing so no css
-
-import { SessionProvider } from 'next-auth/react';
+import "./globals.css";
 import { getServerSession } from 'next-auth';
-import { authOptions } from './api/auth/[...nextauth]';
+import ClientSessionProvider from './client-session-provider'; // Create this component
 
-const SessionProviderWrapper = async ({ children }) => {
-  const session = await getServerSession(authOptions);
-  return (
-    <SessionProvider session={session}>
-      {children}
-    </SessionProvider>
-  );
-};
+async function RootLayout({ children }) {
+  const session = await getServerSession();
 
-export default function RootLayout({ children }) { // Removed async
   return (
     <html lang="en">
       <body>
-        <SessionProviderWrapper>
+        <ClientSessionProvider session={session}>
           {children}
-        </SessionProviderWrapper>
+        </ClientSessionProvider>
       </body>
     </html>
   );
 }
 
+export default RootLayout;
 
 /*
 import { SessionProvider } from 'next-auth/react';
