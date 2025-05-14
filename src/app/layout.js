@@ -1,5 +1,5 @@
-import "./globals.css";
-import { getServerSession } from 'next-auth';
+import './globals.css';
+import { getServerSession } from 'next-auth/next';
 import ClientSessionProvider from './client-session-provider'; // Create this component
 
 async function RootLayout({ children }) {
@@ -18,31 +18,4 @@ async function RootLayout({ children }) {
 
 export default RootLayout;
 
-/*
-import { SessionProvider } from 'next-auth/react';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'; // Corrected path!
-import { ReactNode } from 'react';
 
-const SessionProviderWrapper = async ({ children }: { children: ReactNode }) => {
-    const session = await getServerSession(authOptions);
-    return (
-        <SessionProvider session={session}>
-            {children}
-        </SessionProvider>
-    );
-};
-
-export default async function RootLayout({ children }: { children: ReactNode }) {
-    return (
-        <html lang="en">
-            <body>
-                <SessionProviderWrapper>
-                    {children}
-                </SessionProviderWrapper>
-            </body>
-        </html>
-    );
-}
-
-*/

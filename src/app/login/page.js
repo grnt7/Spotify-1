@@ -35,7 +35,7 @@ export default function Login() {
       {providers && Object.values(providers).map((provider) => (
         <div key={provider.name}>
           <button
-            className="bg-[#18D860] text-white p-5 rounded-full"
+            className="bg-[#18D860] text-white p-5 rounded-full cursor-pointer"
             onClick={() => signIn(provider.id, { callbackUrl: "/" })}
           >
             Sign in with {provider.name}

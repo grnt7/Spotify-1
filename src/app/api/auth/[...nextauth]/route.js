@@ -25,19 +25,19 @@ async function refreshAccessToken(token) {
   }
 }
 
-console.log("JWT Secret in route.js:", process.env.JWT_SECRET); // ADD THIS LINE
+console.log("JWT Secret in route.js:", process.env.JWT_SECRET);
 
 export const authOptions = { // Changed to export const authOptions
   providers: [
     SpotifyProvider({
-      clientId: process.env.SPOTIFY_CLIENT_ID, // Changed to SPOTIFY_CLIENT_ID
+      clientId: process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID, // Changed to NEXT_PUBLIC_SPOTIFY_CLIENT_ID
       clientSecret: process.env.SPOTIFY_CLIENT_SECRET, // Changed to SPOTIFY_CLIENT_SECRET
       authorization: LOGIN_URL,
     }),
   ],
-  secret: process.env.JWT_SECRET,
+  secret: JWT_SECRET,
   pages: {
-    signIn: "/login", // Corrected typo
+    signIn: "/login", 
   },
   callbacks: {
     async jwt({ token, account, user }) {
@@ -52,14 +52,11 @@ export const authOptions = { // Changed to export const authOptions
   },
 };
 
-const handler = NextAuth(authOptions); // Made handler to use authOptions
+
+//import { authOptions } from "./route"; // Import authOptions from the same file
+
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
-
-
-
-
-
-
 
 
 
