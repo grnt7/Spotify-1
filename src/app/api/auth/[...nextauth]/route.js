@@ -35,7 +35,7 @@ export const authOptions = { // Changed to export const authOptions
       authorization: LOGIN_URL,
     }),
   ],
-  secret: JWT_SECRET,
+  secret: process.env.JWT_SECRET,
   pages: {
     signIn: "/login", 
   },
@@ -57,6 +57,3 @@ export const authOptions = { // Changed to export const authOptions
 
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
-
-
-

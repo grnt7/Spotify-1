@@ -49,14 +49,3 @@ export default function Login() {
   );
 }
 
-/*
- <div key={provider.name}>
-          <button
-            className="bg-[#18D860] text-white p-5 rounded-full"//style guide :spotify green: #18D860
-            onClick={() => signIn(provider.id, { callbackUrl: "/" })}
-          >
-            Sign in with {provider.name}
-          </button>
-        </div>
-
-*/

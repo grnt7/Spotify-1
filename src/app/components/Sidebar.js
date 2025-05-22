@@ -21,21 +21,46 @@ function Sidebar() {
   const { data: session, status } = useSession();
   const [playlists, setPlaylists] = useState([]);
 
+  // Log session status
+  console.log("Sidebar - Session:", session);
+  console.log("Sidebar - Session Status:", status);
+
+
   useEffect(() => {
-    if (spotifyApi) { // Check if spotifyApi is not null
-      if (spotifyApi.getAccessToken()) {
-        spotifyApi.getUserPlaylists() // Use the spotifyApi instance directly
+    if (spotifyApi) {
+      console.log("useEffect: spotifyApi instance exists.");
+
+      const accessToken = spotifyApi.getAccessToken(); // Get the current token
+      console.log("useEffect: Spotify Access Token:", accessToken); // LOG THIS!
+
+      if (accessToken) { // Ensure there's a token
+        spotifyApi.getUserPlaylists()
           .then((data) => {
+            console.log("useEffect: Successfully fetched playlists data:", data); // Log raw successful data
             setPlaylists(data.body.items);
           })
           .catch((error) => {
-            console.error("Error fetching playlists:", error);
+            console.error("useEffect: Error fetching playlists:", error); // LOOK FOR THIS IN YOUR BROWSER CONSOLE!
+            // Also log the error details, especially HTTP status codes
+            if (error.statusCode) {
+                console.error("Error status code:", error.statusCode);
+            }
+            if (error.body) {
+                console.error("Error response body:", error.body);
+            }
           });
+      } else {
+        console.warn("useEffect: spotifyApi has no access token or it's expired.");
+        // If the token is null here but the session is authenticated,
+        // the problem is in your useSpotify hook's token management.
       }
+    } else {
+      console.warn("useEffect: spotifyApi instance is null or undefined.");
+      // This should ideally not happen if useSpotify is set up correctly and session is authenticated.
     }
-  }, [session, spotifyApi]); // Keep spotifyApi in the dependency array
+  }, [session, spotifyApi]); // Dependencies: session (for initial load) and spotifyApi (if it changes)
 
-  console.log(playlists);
+  console.log("Current playlists state:", playlists); // This will initially be 
 
   return (
     <div className="text-gray-500 p-5 border-r
