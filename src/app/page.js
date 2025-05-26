@@ -5,6 +5,7 @@ import Image from "next/image";
 
 import Center from "./components/Center";
 import Sidebar from "./components/Sidebar";
+import Player from "./components/Player";
 
 
 
@@ -19,8 +20,8 @@ export default function Home() {
  
    
 </main>
-<div>
-  {/*Player*/}
+<div className="sticky bottom-0 ">
+  <Player/>
 </div>
     </div>
     

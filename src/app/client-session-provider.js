@@ -24,24 +24,4 @@ const ClientSessionProvider = ({ children, session }) => {
 export default ClientSessionProvider;
 
 
-/*
-import "./globals.css";
-import { getServerSession } from 'next-auth';
 
-async function RootLayout({ children }) {
-  const session = await getServerSession();
-  console.log("Session in RootLayout:", session); // Add this line
-
-  return (
-    <html lang="en">
-      <body>
-        {/* Temporarily remove ClientSessionProvider }
-        {children}
-      </body>
-    </html>
-  );
-}
-
-export default RootLayout;
-
-*/
