@@ -1,17 +1,23 @@
 import React, { useRef, useEffect } from 'react';
-import { atom, useAtom, useAtomValue } from 'jotai';
+import { atom, useAtom } from 'jotai';
 import { BsFillVolumeDownFill } from "react-icons/bs";
-
+// Assuming useSongInfo now returns { songInfo: ..., loading: ..., error: ... }
+import useSongInfo from '../hooks/useSongInfo';
+import { TbSwitch2 } from "react-icons/tb";
+import { SlLoop } from "react-icons/sl";
+import { FaForwardStep } from "react-icons/fa6";
+import { FaPlayCircle } from "react-icons/fa";
+import { FaPauseCircle } from "react-icons/fa";
+import { FaBackwardStep } from "react-icons/fa6";
 // --- Jotai Atoms (src/atoms/playerAtoms.js) ---
-// Make sure this definition is consistent across your files.
-// Ideally, these atoms should be in a separate file (e.g., playerAtoms.js)
-// and imported into both Player.js and Center.js.
-const defaultTrack = {
+// It's crucial that these are defined ONCE and imported everywhere.
+// Keeping them here for demonstration, but they should be in a separate file.
+export const defaultTrack = {
   id: null,
   title: 'No song playing',
   artist: 'N/A',
   albumArt: 'https://placehold.co/64x64/222222/cccccc?text=No+Art',
-  audioUrl: '',
+  audioUrl: '', // This should ideally be a valid audio stream URL
   album: {
     images: [{ url: 'https://placehold.co/64x64/222222/cccccc?text=No+Art' }]
   }
@@ -25,42 +31,46 @@ export const currentPlaybackPositionAtom = atom(0);
 
 // --- Player Component (src/components/Player.js) ---
 function Player() {
-  const [currentTrack, setCurrentTrack] = useAtom(currentTrackAtom);
+  const [currentTrack, setCurrentTrack] = useAtom(currentTrackAtom); // This atom holds the overall track data
   const [isPlaying, setIsPlaying] = useAtom(isPlayingAtom);
   const [volume, setVolume] = useAtom(volumeAtom);
 
   const audioRef = useRef(null);
-  const songInfo = currentTrack || defaultTrack; // Ensure default if currentTrack is null/undefined
+
+  // 1. Destructure the result from useSongInfo
+  //    The 'songData' variable will now hold the actual song object fetched by the hook.
+  //    We also get loading and error states for better UI feedback.
+  const { songInfo: fetchedSongData, loading, error } = useSongInfo();
+
+  // Use the fetched song data if available, otherwise fall back to currentTrack or default.
+  // This prioritizes the data fetched by useSongInfo for display.
+  // For the actual audio source, we use currentTrack.audioUrl
+  const displaySongInfo = fetchedSongData || currentTrack || defaultTrack;
+  const audioSourceUrl = currentTrack.audioUrl; // This is the crucial part for actual playback
 
   // Effect to handle playing/pausing and changing the track source
   useEffect(() => {
     console.log("Player useEffect: Triggered.");
     console.log("Player useEffect: current audioRef.current:", audioRef.current);
-    console.log("Player useEffect: songInfo.audioUrl:", songInfo.audioUrl);
+    console.log("Player useEffect: audioSourceUrl:", audioSourceUrl);
     console.log("Player useEffect: isPlaying state:", isPlaying);
 
     if (audioRef.current) {
       const audio = audioRef.current;
       const currentAudioSrc = audio.src;
-      const newAudioSrc = songInfo.audioUrl;
 
       // Handle audio errors for debugging
       audio.onerror = (e) => {
         console.error("Audio Element Error:", e);
         console.error("Audio error code:", e.target.error.code);
-        // Common error codes:
-        // 1: MEDIA_ERR_ABORTED - fetching process aborted by user
-        // 2: MEDIA_ERR_NETWORK - network error during fetch
-        // 3: MEDIA_ERR_DECODE - decoding error
-        // 4: MEDIA_ERR_SRC_NOT_SUPPORTED - audio format/source not supported
         alert(`Audio Error: Code ${e.target.error.code}. Check console.`);
         setIsPlaying(false); // Stop trying to play if error occurs
       };
 
       // Scenario 1: A new track URL is provided and it's different from the current one
-      if (newAudioSrc && newAudioSrc !== currentAudioSrc) {
+      if (audioSourceUrl && audioSourceUrl !== currentAudioSrc) {
         console.log("Player useEffect: New audio URL detected. Loading new track.");
-        audio.src = newAudioSrc;
+        audio.src = audioSourceUrl;
         audio.load(); // Request the browser to load the new audio source
 
         if (isPlaying) {
@@ -71,8 +81,6 @@ function Player() {
               console.error("Player useEffect: Error playing new audio:", e);
               if (e.name === "NotAllowedError") {
                 console.warn("Autoplay was prevented. User interaction (e.g., a click) is required to start playback.");
-                // You might want to set isPlaying to false here to reflect the actual state
-                // setIsPlaying(false);
               }
             });
         } else {
@@ -80,7 +88,7 @@ function Player() {
         }
       }
       // Scenario 2: Same track, but isPlaying state has changed (e.g., user clicked play/pause)
-      else if (newAudioSrc === currentAudioSrc) {
+      else if (audioSourceUrl === currentAudioSrc) {
         if (isPlaying) {
           console.log("Player useEffect: Same track, isPlaying is true. Attempting to play/resume.");
           audio.play()
@@ -96,12 +104,10 @@ function Player() {
           audio.pause();
         }
       }
-      // Scenario 3: No new audio URL, but isPlaying state might have changed for default track
+      // Scenario 3: No specific audio URL, but isPlaying state might have changed for default track
       else {
         if (isPlaying) {
             console.log("Player useEffect: No specific audio URL, but isPlaying is true. (Likely default state)");
-            // This case might happen if currentTrack.audioUrl is empty but isPlaying is true
-            // audio.play() would likely fail here, but good to note the state.
         } else {
             console.log("Player useEffect: No specific audio URL, isPlaying is false. Audio paused.");
             audio.pause(); // Ensure paused if no song loaded
@@ -110,7 +116,7 @@ function Player() {
     } else {
       console.warn("Player useEffect: audioRef.current is null. Audio element not ready.");
     }
-  }, [songInfo.audioUrl, isPlaying]); // Depend on audioUrl and isPlaying to re-run
+  }, [audioSourceUrl, isPlaying]); // Depend on audioSourceUrl and isPlaying to re-run
 
   // Effect to handle volume changes
   useEffect(() => {
@@ -129,20 +135,28 @@ function Player() {
   // Function to handle volume change
   const handleVolumeChange = (e) => {
     setVolume(parseFloat(e.target.value));
-    // The volume useEffect will handle updating audioRef.current.volume
-    // console.log(`Player: Volume input changed to: ${e.target.value}`);
   };
 
   // Ensure album art URL is safely accessed
-  const albumArtUrl = songInfo.album?.images?.[0]?.url || defaultTrack.albumArt;
+  const albumArtUrl = displaySongInfo.album?.images?.[0]?.url || defaultTrack.albumArt;
 
   // --- DEBUGGING: Log songInfo and albumArtUrl ---
-  console.log("Player Component - Render: currentTrack (songInfo):", songInfo);
+  console.log("Player Component - Render: displaySongInfo:", displaySongInfo);
   console.log("Player Component - Render: albumArtUrl:", albumArtUrl);
+  
   // --- END DEBUGGING ---
 
+  // Handle loading and error states for the UI
+  if (loading) {
+    return <div className="fixed bottom-0 left-0 w-full bg-gray-900 text-white p-4 text-center">Loading song details...</div>;
+  }
+
+  if (error) {
+    return <div className="fixed bottom-0 left-0 w-full bg-gray-900 text-red-500 p-4 text-center">Error loading song: {error.message}</div>;
+  }
+
   return (
-    <div className="fixed bottom-0 left-0 w-full bg-gray-900 text-white p-4 flex items-center justify-between shadow-lg rounded-t-lg">
+    <div className="h-24 fixed bottom-0 left-0 w-full bg-gray-900 text-white p-4 flex items-center justify-between shadow-lg rounded-t-lg">
       {/* Hidden audio element */}
       <audio ref={audioRef} preload="auto" />
 
@@ -150,56 +164,72 @@ function Player() {
       <div className="flex items-center space-x-4">
         <img
           className="h-16 w-16 rounded-lg shadow-md"
-          src={albumArtUrl}
-          alt={songInfo.title}
+          src={albumArtUrl} // Use the safely accessed URL
+          alt={displaySongInfo.title || "Album Art"}
           onError={(e) => {
             console.error("Error loading album art:", e.target.src);
             e.target.src = defaultTrack.albumArt; // Fallback for broken images
           }}
+          
         />
+      
         <div>
-          <h3 className="font-bold text-lg text-white">{songInfo.title}</h3>
-          <p className="text-sm text-gray-400">{songInfo.artist}</p>
+          <h3 className="font-bold text-lg text-white">{displaySongInfo.title}</h3>
+          <p className="text-sm text-gray-400">{displaySongInfo.artist}</p>
         </div>
       </div>
-
-      {/* Center section: Controls (Play/Pause, Next/Previous) */}
-      <div className="flex items-center space-x-6">
+ 
+      {/* Center section: Controls (Switch, Play/Pause, Next/Previous) */}
+      <div className="flex items-center space-x-8">
+        <div>
+          < TbSwitch2 className="button w-6 h-6 text-gray-400 hover:text-white transition-colors duration-200"/>
+          </div>
         {/* Previous button */}
-        <button className="text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 rounded-full p-2">
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
-          </svg>
-        </button>
+        <div className= "button  text-gray-400 hover:text-white transition-colors duration-200">
+            <FaBackwardStep  />
+          </div>
+        {/* <button className="text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 rounded-full p-2"> */}
+          {/* <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"> */}
+            {/* <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/> */}
+          {/* </svg> */}
+        {/* </button> */}
 
         {/* Play/Pause button */}
         <button
           onClick={handlePlayPause}
-          className="bg-green-500 rounded-full p-3 hover:bg-green-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-md cursor-pointer"
+          className=" shadow-md cursor-pointer transform hover:scale-105"
         >
           {isPlaying ? (
-            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-            </svg> // Pause icon
+            <FaPauseCircle className="w-10 h-10 hover:text-xl" /> // Use FontAwesome for pause icon
+             // Pause icon
           ) : (
-            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z"/>
-            </svg> // Play icon
+            <FaPlayCircle className="w-10 h-10 " /> // Use FontAwesome for play icon
+            // <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+             // <path d="M8 5v14l11-7z"/>
+           // </svg> // Play icon
           )}
         </button>
-
+          
         {/* Next button */}
-        <button className="text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 rounded-full p-2">
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M18 6l-8.5 6 8.5 6V6zM6 6v12h2V6H6z"/>
-          </svg>
-        </button>
+        <div>
+          <FaForwardStep  className="button  text-gray-400 hover:text-white transition-colors duration-200"/>
+        </div>
+        
+        {/* <button className="text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 rounded-full p-2"> */}
+          {/* <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"> */}
+            {/* <path d="M18 6l-8.5 6 8.5 6V6zM6 6v12h2V6H6z"/> */}
+          {/* </svg> */}
+        {/* </button> */}
+         <div>
+        < SlLoop className="button w-6 h-6 rounded-sm text-gray-400 hover:text-white transition-colors duration-200 "/>
       </div>
+      </div>
+     
 
       {/* Right section: Volume Control (example using Tailwind for styling) */}
       <div className="flex items-center space-x-2 w-48 hidden md:flex">
         <span className="text-gray-400">
-            <BsFillVolumeDownFill className="w-6 h-6"/> {/* Adjusted icon size */}
+            <BsFillVolumeDownFill className="w-6 h-6"/>
         </span>
         <input
           type="range"
@@ -220,3 +250,10 @@ function Player() {
 }
 
 export default Player;
+
+{/* <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+            </svg> */} //pause icon
+
+
+            // bg-green-500 rounded-full p-3 hover:bg-green-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500

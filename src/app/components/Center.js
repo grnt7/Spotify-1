@@ -19,9 +19,6 @@ import { millisToMinutesAndSeconds } from "./time";
 
 
 
-
-
-
 const colors = [
   "from-indigo-500",
   "from-blue-500",
@@ -34,8 +31,6 @@ const colors = [
 
 
 ]
-
-
 
 function Center() {
     
@@ -161,7 +156,7 @@ useEffect(()  => {
                     <div
             key={trackItem.track.id}
             className="flex items-center py-2 hover:bg-gray-800 rounded-lg cursor-pointer" // 'flex items-center' 
-             onClick={() => playTrack(trackItem.track)} //this is the key line to play the track
+             onClick={() => playTrack(trackItem.track)} //this is the key line to play the track: added 26/5/25
         >
                       <p className="text-right text-gray-400 w-8 flex-shrink-0 mr-6">{i + 1}</p> {/* Added w-8 flex-shrink-0 */}
                       {/* 2. Track Image (Album Art) */}
