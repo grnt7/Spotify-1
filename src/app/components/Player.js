@@ -1,7 +1,8 @@
+import { useSession } from "next-auth/react";
+import useSpotify from "../hooks/useSpotify";
 import React, { useRef, useEffect } from 'react';
 import { atom, useAtom } from 'jotai';
 import { BsFillVolumeDownFill } from "react-icons/bs";
-// Assuming useSongInfo now returns { songInfo: ..., loading: ..., error: ... }
 import useSongInfo from '../hooks/useSongInfo';
 import { TbSwitch2 } from "react-icons/tb";
 import { SlLoop } from "react-icons/sl";
@@ -19,7 +20,7 @@ export const defaultTrack = {
   albumArt: 'https://placehold.co/64x64/222222/cccccc?text=No+Art',
   audioUrl: '', // This should ideally be a valid audio stream URL
   album: {
-    images: [{ url: 'https://placehold.co/64x64/222222/cccccc?text=No+Art' }]
+  images: [{ url: 'https://placehold.co/64x64/222222/cccccc?text=No+Art' }]
   }
 };
 
@@ -31,6 +32,8 @@ export const currentPlaybackPositionAtom = atom(0);
 
 // --- Player Component (src/components/Player.js) ---
 function Player() {
+  const spotifyApi = useSpotify();
+  const {data: session} = useSession();
   const [currentTrack, setCurrentTrack] = useAtom(currentTrackAtom); // This atom holds the overall track data
   const [isPlaying, setIsPlaying] = useAtom(isPlayingAtom);
   const [volume, setVolume] = useAtom(volumeAtom);
@@ -128,8 +131,17 @@ function Player() {
 
   // Function to handle play/pause
   const handlePlayPause = () => {
-    setIsPlaying((prevIsPlaying) => !prevIsPlaying);
-    console.log(`Player: Playback toggled via UI. New isPlaying state will be: ${!isPlaying}`);
+    spotifyApi.getMyCurrentPlaybackState().then((data) => {
+      if (data.body.is_playing) {
+        spotifyApi.pause()
+          setIsPlaying(false);
+        } else {
+          spotifyApi.play();
+          setIsPlaying(true);
+        }
+      });
+    // setIsPlaying((prevIsPlaying) => !prevIsPlaying);
+    // console.log(`Player: Playback toggled via UI. New isPlaying state will be: ${!isPlaying}`);
   };
 
   // Function to handle volume change
@@ -160,7 +172,7 @@ function Player() {
       {/* Hidden audio element */}
       <audio ref={audioRef} preload="auto" />
 
-      {/* Left section: Album Art and Song Info */}
+      {/* Left section: Album Art and Song Info*/ }
       <div className="flex items-center space-x-4">
         <img
           className="h-16 w-16 rounded-lg shadow-md"
@@ -174,36 +186,36 @@ function Player() {
         />
       
         <div>
-          <h3 className="font-bold text-lg text-white">{displaySongInfo.title}</h3>
+          <h3 className=" flex font-bold text-sm text-white">{displaySongInfo.title}</h3>
           <p className="text-sm text-gray-400">{displaySongInfo.artist}</p>
         </div>
       </div>
  
       {/* Center section: Controls (Switch, Play/Pause, Next/Previous) */}
-      <div className="flex items-center space-x-8">
+      <div className="flex items-center justify-evenly space-x-10">
         <div>
-          < TbSwitch2 className="button w-6 h-6 text-gray-400 hover:text-white transition-colors duration-200"/>
+          < TbSwitch2 className="button  text-gray-400 hover:text-white transition-colors duration-200 cursor-pointer"/>
           </div>
-        {/* Previous button */}
-        <div className= "button  text-gray-400 hover:text-white transition-colors duration-200">
+        {/* Previous button*/ }
+        <div className= "button  text-gray-400 hover:text-white transition-colors duration-200 cursor-pointer">
             <FaBackwardStep  />
           </div>
-        {/* <button className="text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 rounded-full p-2"> */}
-          {/* <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"> */}
-            {/* <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/> */}
-          {/* </svg> */}
-        {/* </button> */}
+        {/* <button className="text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 rounded-full p-2"> }
+          { <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"> }
+            {/* <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/> }
+          {/* </svg> }
+        {/* </button> }
 
         {/* Play/Pause button */}
         <button
           onClick={handlePlayPause}
-          className=" shadow-md cursor-pointer transform hover:scale-105"
+          className=" shadow-md transform hover:scale-105 cursor-pointer"
         >
           {isPlaying ? (
-            <FaPauseCircle className="w-10 h-10 hover:text-xl" /> // Use FontAwesome for pause icon
+            <FaPauseCircle  className="w-10 h-10 hover:text-xl" /> // Use FontAwesome for pause icon
              // Pause icon
           ) : (
-            <FaPlayCircle className="w-10 h-10 " /> // Use FontAwesome for play icon
+            <FaPlayCircle className="w-10 h-10 cursor-pointer " /> // Use FontAwesome for play icon
             // <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
              // <path d="M8 5v14l11-7z"/>
            // </svg> // Play icon
@@ -212,21 +224,21 @@ function Player() {
           
         {/* Next button */}
         <div>
-          <FaForwardStep  className="button  text-gray-400 hover:text-white transition-colors duration-200"/>
+          <FaForwardStep  className="button  text-gray-400 hover:text-white transition-colors duration-200 cursor-pointer"/>
         </div>
         
         {/* <button className="text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 rounded-full p-2"> */}
           {/* <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"> */}
             {/* <path d="M18 6l-8.5 6 8.5 6V6zM6 6v12h2V6H6z"/> */}
-          {/* </svg> */}
+          {/* </svg> */} 
         {/* </button> */}
          <div>
-        < SlLoop className="button w-6 h-6 rounded-sm text-gray-400 hover:text-white transition-colors duration-200 "/>
+        < SlLoop className="button rounded-sm text-gray-400 hover:text-white transition-colors duration-200 cursor-pointer"/>
       </div>
       </div>
      
 
-      {/* Right section: Volume Control (example using Tailwind for styling) */}
+      {/* Right section: Volume Control (example using Tailwind for styling)*/ }
       <div className="flex items-center space-x-2 w-48 hidden md:flex">
         <span className="text-gray-400">
             <BsFillVolumeDownFill className="w-6 h-6"/>
@@ -238,11 +250,8 @@ function Player() {
           step="0.01"
           value={volume}
           onChange={handleVolumeChange}
-          className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg
-                      [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-green-500
-                      [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg
-                      [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-green-500
-                      [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:shadow-lg"
+          className="w-full h-1 bg-green-500 rounded-lg appearance-none cursor-pointer range-lg"
+                     
         />
       </div>
     </div>
@@ -251,9 +260,3 @@ function Player() {
 
 export default Player;
 
-{/* <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-            </svg> */} //pause icon
-
-
-            // bg-green-500 rounded-full p-3 hover:bg-green-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500

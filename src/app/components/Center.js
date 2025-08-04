@@ -1,23 +1,21 @@
 'use client';
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
-import {  useSession, signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState} from "react";
-import { useAtomValue, useSetAtom} from 'jotai'; // <--- IMPORT useAtomValue
-//import { playlistIdState } from '../../../atoms/playlistAtom'; // <--- IMPORT your atom (adjust path if necessary)
+import { useAtomValue, useSetAtom} from 'jotai';
 
-import { currentTrackAtom, isPlayingAtom } from '../../../atoms/playerAtoms'; // Adjust path if needed
-
+import { 
+  currentTrackAtom, 
+  isPlayingAtom, 
+  deviceIdAtom // Get the active player device
+} from '../../../atoms/playerAtoms';
 
 import {
   playlistIdState,
-  playlistAtom,       // <--- IMPORT THE DERIVED playlistAtom
-  spotifyApiState     // <--- IMPORT spotifyApiState
+  spotifyApiState
 } from '../../../atoms/playlistAtom';
 import { shuffle } from "lodash";
 import useSpotify from '../hooks/useSpotify';
 import { millisToMinutesAndSeconds } from "./time";
-
-
 
 const colors = [
   "from-indigo-500",
@@ -27,165 +25,178 @@ const colors = [
   "from-yellow-500",
   "from-pink-500",
   "from-purple-500"
-
-
-
-]
+];
 
 function Center() {
-    
-   const spotifyApi = useSpotify();
-    const setSpotifyApiAtom = useSetAtom(spotifyApiState); // Setter for spotifyApiState atom
+  const spotifyApi = useSpotify();
+  const setSpotifyApiAtom = useSetAtom(spotifyApiState);
 
-    // Get the setters for the player atoms
   const setCurrentTrack = useSetAtom(currentTrackAtom);
   const setIsPlaying = useSetAtom(isPlayingAtom);
-  const currentTrack = useAtomValue(currentTrackAtom); // Also get the current track to highlight
+  const currentTrack = useAtomValue(currentTrackAtom);
+  const deviceId = useAtomValue(deviceIdAtom); // Get the current active device ID
 
-    // Set the spotifyApi instance in the atom
-    useEffect(() => {
-        if (spotifyApi) {
-            setSpotifyApiAtom(spotifyApi);
-            console.log("Center: Spotify API instance set in Jotai atom.");
-        }
-    }, [spotifyApi, setSpotifyApiAtom]);
+  const [localPlaylist, setLocalPlaylist] = useState(null);
+  const [color, setColor] = useState('');
   
-  
-  
-    const {data: session} = useSession();
-    //const [color,setColor] = useState(null);
-   // const [color, setColor] = useState(shuffle(colors).pop()); // Set initial color
-    const [color, setColor] = useState('');//fix hydration error
-  
-  
-  
-    const playlistId = useAtomValue(playlistIdState); // <--- GET playlistId from Jotai
-  //const [playlist, setPlaylist] = useAtom(playlistIdState); // Initialize playlist state
-  
-    const playlist = useAtomValue(playlistAtom);
- 
-    console.log("Center - Current playlistId:", playlistId); // Log to verify
-    // --- Logging playlistId and playlist object ---
-    console.log("Center - Component Render: Current playlistId (from atom):", playlistId);
-    console.log("Center - Component Render: Fetched playlist object (from derived atom):", playlist);
+  const {data: session} = useSession();
+  const playlistId = useAtomValue(playlistIdState);
 
+  // Set the spotifyApi instance in the Jotai atom.
+  useEffect(() => {
+    if (spotifyApi) {
+      setSpotifyApiAtom(spotifyApi);
+      console.log("Center: Spotify API instance set in Jotai atom.");
+    }
+  }, [spotifyApi, setSpotifyApiAtom]);
 
-useEffect(()  => {
- console.log('useEffect for color ran. Playlist ID:', playlistId);
-        if (playlistId) { // Only shuffle and set color if playlistId exists
-            setColor(shuffle(colors).pop());
-        }
-    }, [playlistId]); // This dependency array is correct: re-run when playlistId changes
+  // This effect will now only run when the API instance, playlistId, AND the session object are ready.
+  // Using 'session' as the dependency ensures the array size is constant.
+  useEffect(() => {
+    console.log("Center - Fetching Effect triggered. spotifyApi:", !!spotifyApi, "playlistId:", playlistId, "session:", !!session);
 
-  //Function to handle clicking on a track
-    const playTrack = (track) => {
-    // 1. Update the currentTrackAtom with the clicked track's details
+    // Added a check to ensure playlistId is a non-empty string.
+    if (spotifyApi && playlistId && session) {
+      console.log(`Center: Attempting to fetch playlist with ID: ${playlistId}`);
+      spotifyApi
+        .getPlaylist(playlistId)
+        .then((data) => {
+          setLocalPlaylist(data.body);
+          console.log("Center: Successfully fetched playlist:", data.body.name);
+        })
+        .catch((error) => {
+          console.error("Center.js: Error fetching playlist:", error);
+          setLocalPlaylist(null);
+        });
+    } else {
+      setLocalPlaylist(null);
+      console.log("Center: Waiting for a playlist to be selected or session to load.");
+    }
+  }, [spotifyApi, playlistId, session]);
+
+  useEffect(()  => {
+    console.log('useEffect for color ran. Playlist ID:', playlistId);
+    if (playlistId) {
+      setColor(shuffle(colors).pop());
+    }
+  }, [playlistId]);
+
+  const playTrack = async (track) => {
     setCurrentTrack({
       id: track.id,
       title: track.name,
-      artist: track.artists?.[0]?.name || 'Unknown Artist',
-      albumArt: track.album?.images?.[0]?.url || '',
-      audioUrl: track.preview_url, // Spotify provides a 30-second preview URL
-      album: {
-        name: track.album?.name || 'Unknown Album',
-        images: track.album?.images || []
-      }
+      artist: track.artists?.[0]?.name,
+      albumArt: track.album.images?.[0]?.url,
+      album: track.album,
+      uri: track.uri,
     });
-
-    // 2. Set isPlaying to true to start playback
     setIsPlaying(true);
-    console.log(`Now playing: ${track.name} by ${track.artists?.[0]?.name}`);
+    
+    if (spotifyApi && deviceId && track.uri) {
+      try {
+        await spotifyApi.play({
+          uris: [track.uri],
+          device_id: deviceId,
+        });
+        console.log(`Center: Playback started for ${track.name} on device ${deviceId}`);
+      } catch (error) {
+        console.error("Center.js: Error playing track:", error);
+      }
+    } else {
+      console.warn("Center.js: Cannot play track. Missing spotifyApi, deviceId, or track URI.");
+    }
   };
 
-
-
-
   return (
-    <div className="flex-grow h-screen overflow-y-scroll scrollbar-hide
-    text-white" >
-      
+    <div className="flex-grow h-screen overflow-y-scroll scrollbar-hide text-white">
       <header className="absolute top-5 right-8">
-        <div className="flex items-center bg-black space-x-3 
-        opacity-90 hover:opacity-75 cursor-pointer rounded-full 
-        p-1 pr-2 w-35  text-white"
-         onClick={() => signOut({ callbackUrl: '/api/auth/signin' })} > {/* Added callbackUrl to signOut */}
-            <img className="rounded-full w-10 h-10" 
-            src={session?.user.image} alt="" 
-            />
-            <h2>{session?.user.name}</h2>
-            <ChevronDownIcon className="h-5 w-5 "/>
-            
+        <div 
+          className="flex items-center bg-black space-x-3 opacity-90 hover:opacity-75 cursor-pointer rounded-full p-1 pr-2 w-35 text-white"
+          onClick={() => signOut({ callbackUrl: '/api/auth/signin' })}
+        >
+          <img 
+            className="rounded-full w-10 h-10" 
+            src={session?.user.image} 
+            alt="" 
+          />
+          <h2>{session?.user.name}</h2>
+          <span className="text-xl">▼</span>
         </div>
       </header>
-      <section
-                // Corrected Tailwind classes: `padding-8` to `p-8`, `w-44shadow-2xl` separated
-                className={`flex items-end space-x-7 bg-gradient-to-b to-black ${color} h-80 text-white p-8`}
-            >
-                {/* THIS IS THE CRUCIAL CONDITIONAL RENDERING BLOCK FOR PLAYLIST DETAILS */}
-                {/* Only render this block if 'playlist' object has data (is not null) */}
-                {playlist ? (
-                    <>
-                        {/* Ensure image URL exists before rendering the <img> tag */}
-                        {playlist.images?.[0]?.url && ( // Use optional chaining for images array and url
-                            <img
-                                className="h-44 w-44 shadow-2xl" // Corrected spacing for classes
-                                src={playlist.images[0].url} // This line is now safe because 'playlist' is guaranteed not null
-                                alt={playlist.name || "Playlist image"} // Add meaningful alt text
-                            />
-                        )}
-                        <div>
-                            <p className="text-sm font-bold">PLAYLIST</p>
-                            <h1 className="text-2xl md:text-3xl xl:text-5xl font-bold">
-                                {playlist.name} {/* This is also safe now */}
-                            </h1>
-                        </div>
-                    </>
-                ) : (
-                    // Display a loading message or spinner while playlist is null
-                    // This will be shown initially and while data is fetching
-                    <div className="text-xl">Loading Playlist Details...</div>
-                )}
-            </section>
-
-            {/* Render tracks from the playlist */}
-            {/* This also needs to be conditional on 'playlist' existing */}
-            <div className="px-8 flex flex-col space-y-1  text-white  overflow-y-scroll scrollbar-hide
-        h-screen">
-                {playlist?.tracks?.items.map((trackItem, i) => ( // <-- Use optional chaining here too
-                    // Ensure trackItem.track and its properties exist before accessing
-                    <div
-            key={trackItem.track.id}
-            className="flex items-center py-2 hover:bg-gray-800 rounded-lg cursor-pointer" // 'flex items-center' 
-             onClick={() => playTrack(trackItem.track)} //this is the key line to play the track: added 26/5/25
-        >
-                      <p className="text-right text-gray-400 w-8 flex-shrink-0 mr-6">{i + 1}</p> {/* Added w-8 flex-shrink-0 */}
-                      {/* 2. Track Image (Album Art) */}
-                {/* Only render the image if a URL exists */}
-                {trackItem.track.album?.images?.[0]?.url && (
-                    <img
-                        src={trackItem.track.album.images[0].url}
-                        alt={trackItem.track.name || 'Album art'}
-                        className="h-10 w-10 mr-4 rounded-sm" // Adjust size (h-10 w-10) and right margin (mr-4) as needed
-                    />
-                )}
-            {/* The space is now created by the fixed width of the number's container.*/}
-                        <div  className="grid grid-cols-3  gap-x-4 w-40  flex-grow l-auto md:ml-0">
-                        {trackItem.track.name} - {trackItem.track.artists?.[0]?.name || 'Unknown Artist'}
-                         <p className="truncate text-gray-400 hidden md:inline w-40 ">
-                {trackItem.track.album?.name || 'Unknown Album'} {/* Access album.name */}
-            </p>
-            <p className="text-right text-gray-400 w-12 flex-shrink-0 ml-4">
-                    {millisToMinutesAndSeconds(trackItem.track.duration_ms)} {/* <-- YOU MUST CALL THE FUNCTION HERE! */}
-                </p>
-                    </div>
-                    
-                  
-                    </div>
-                   
-                ))}
+      
+      <section className={`flex items-end space-x-7 bg-gradient-to-b to-black ${color} h-80 text-white p-8`}>
+        {localPlaylist ? (
+          <>
+            {localPlaylist.images?.[0]?.url && (
+              <img
+                className="h-44 w-44 shadow-2xl"
+                src={localPlaylist.images[0].url}
+                alt={localPlaylist.name || "Playlist image"}
+              />
+            )}
+            <div>
+              <p className="text-sm font-bold">PLAYLIST</p>
+              <h1 className="text-2xl md:text-3xl xl:text-5xl font-bold">
+                {localPlaylist.name}
+              </h1>
             </div>
-        </div>
-    );
+          </>
+        ) : (
+          <div className="text-xl">
+            {playlistId ? "Loading Playlist Details..." : "Please select a playlist from the sidebar."}
+          </div>
+        )}
+      </section>
+
+      <div className="px-8 flex flex-col space-y-1 text-white overflow-y-scroll scrollbar-hide h-screen pb-24">
+        {localPlaylist?.tracks?.items?.length > 0 ? (
+          localPlaylist.tracks.items.map((trackItem, i) => {
+            if (!trackItem?.track) {
+              console.warn(`Center.js: Skipping track item at index ${i} because track data is missing.`);
+              return <div key={`empty-${i}`}></div>; 
+            }
+
+            const track = trackItem.track;
+            
+            return (
+              <div
+                key={track.id || `track-${i}`}
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 items-center py-4 px-2 hover:bg-gray-800 rounded-lg cursor-pointer"
+                onClick={() => playTrack(track)}
+              >
+                <div className="flex items-center space-x-4">
+                  <p className="text-right text-gray-400 w-8">{i + 1}</p>
+                  {track.album?.images?.[0]?.url && (
+                    <img
+                      src={track.album.images[0].url}
+                      alt={track.name || 'Album art'}
+                      className="h-10 w-10 rounded-sm"
+                    />
+                  )}
+                  <div className="flex-grow">
+                    <p className="font-semibold">{track.name}</p>
+                    <p className="text-sm text-gray-400 truncate w-40">{track.artists?.[0]?.name || 'Unknown Artist'}</p>
+                  </div>
+                </div>
+                
+                <div className="hidden sm:block text-sm text-gray-400">
+                  <p className="truncate">{track.album?.name || 'Unknown Album'}</p>
+                </div>
+
+                <div className="flex items-center justify-end">
+                  <p className="text-sm text-gray-400">{millisToMinutesAndSeconds(track.duration_ms)}</p>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="text-center text-gray-400 mt-10">
+            {playlistId ? "This playlist has no tracks or is currently loading." : "Please select a playlist from the sidebar."}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default Center;

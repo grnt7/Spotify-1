@@ -5,18 +5,21 @@ export const defaultTrack = {
   id: null,
   title: 'No song playing',
   artist: 'N/A',
-  albumArt: 'https://placehold.co/64x64/222222/cccccc?text=No+Art', // Placeholder image
-  audioUrl: '',
+  albumArt: 'https://placehold.co/64x64/222222/cccccc?text=No+Art',
   album: {
     images: [{ url: 'https://placehold.co/64x64/222222/cccccc?text=No+Art' }]
-  }
+  },
+  uri: null,
 };
 
-// Jotai atoms, ensuring names match what Center.js imports:
-export const currentTrackAtom = atom(defaultTrack); // Exports 'currentTrackAtom'
-export const isPlayingAtom = atom(false); // Exports 'isPlayingAtom'
-export const volumeAtom = atom(0.5); // Exports 'volumeAtom'
-export const currentPlaybackPositionAtom = atom(0); // Exports 'currentPlaybackPositionAtom'
+// Jotai atoms for the player state.
+export const currentTrackAtom = atom(defaultTrack);
+export const isPlayingAtom = atom(false);
+export const volumeAtom = atom(0.5);
+export const currentPlaybackPositionAtom = atom(0);
+export const playlistAtom = atom([]);
+export const deviceIdAtom = atom(null);
 
-// Other player-related atoms you might need (ensure they are also exported if used elsewhere):
-export const playlistAtom = atom([]); // Example: Atom to hold the current queue/playlist
+// NEW: Atom to track if the Spotify player is initialized and ready.
+export const isPlayerInitializedAtom = atom(false);
+

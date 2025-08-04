@@ -36,6 +36,16 @@ body {
     display: none;
   }
 
+  @layer components {
+    .button {
+      @apply   hover:scale-125 transition transform duration-100 ease-out;
+    }
+    /* Hide scrollbar for Chrome, Safari, and Opera when using scrollbar-hide */
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
   /* Hide scrollbar for Chrome, Safari, and Opera when using scrollbar-hide */
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
