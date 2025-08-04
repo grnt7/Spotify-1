@@ -1,7 +1,8 @@
 This is a Spotify Clone App developed youTube tutorial with REACT and Next.JS 
 
 
-![Spotify Apple Device Mockup](https://github.com/user-attachments/assets/25c0afbc-11d4-447a-928c-c3e08f700be4)
+![Spotify device mockup resize](https://github.com/user-attachments/assets/35d58023-8925-4b35-a3ce-8b00df7e79b3)
+
 
 
 
