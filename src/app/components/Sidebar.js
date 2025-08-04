@@ -104,7 +104,7 @@ function Sidebar() {
             <p>Create Playlist</p>
         </button>
         <button className="flex items-center space-x-2 hover:text-white"  >
-            <HeartIcon className="h-5 w-5"/>
+            <HeartIcon className="h-5 w-5 text-green-500"/>
             <p>Liked Songs</p>
         </button>
         <button className="flex items-center space-x-2 hover:text-white" >

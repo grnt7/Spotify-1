@@ -68,8 +68,8 @@ export default useSongInfo;
 
 
 
-
-/*import { useEffect, useState } from "react"
+/*
+import { useEffect, useState } from "react"
 import { useAtomValue } from 'jotai'; // Import useAtomValue to read atom values //alt to recoil
 import { currentTrackIdState } from "../../../atoms/playerAtoms";
 import useSpotify from "./useSpotify";
@@ -92,8 +92,8 @@ function useSongInfo() {
                         }
                     }
                 ).then (res => res.json());
-                setSongInfo(track);
-                console.log("Fetched song info:", track);
+                setSongInfo(trackInfo);
+                console.log("Fetched song info:", trackInfo);
             }
         };
 
