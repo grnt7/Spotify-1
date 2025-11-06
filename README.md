@@ -1,6 +1,6 @@
 This is a Spotify Clone App developed youTube tutorial with REACT and Next.JS 
 
-Disclaimer:** Built purely for demonstration of React/Next.js skills; zero affiliation with the original brand."
+Disclaimer:** Built purely for demonstration of React/Next.js utilizing Spotify Web developer API skills; zero affiliation with the original brand."
 
 <img width="2500" height="1783" alt="SpotifyGroupx2500 copy" src="https://github.com/user-attachments/assets/320db56c-b6d1-4a66-bcb2-0eaac06a4baf" />
 
