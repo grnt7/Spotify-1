@@ -13,11 +13,12 @@ Disclaimer:** Built purely for demonstration of React/Next.js utilizing Spotify 
 
 🚀 Live See the application live here: https://spotify-1-lake.vercel.app/
 
+🎵 Fetch PLaylists and Control Music.
+
 ✨ Features Key Feature 1: Fully responsive design ensures seamless experience across all devices. 
 
 🛠️ Technologies Used Frontend: React with Next.JS, Styled Components using Tailwind CSS
 
-React Router Dom (for client-side routing) Redux for state management UI libraries: 
 
 APIs Integrated:
 
