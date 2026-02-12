@@ -11,17 +11,28 @@ Disclaimer:** Built purely for demonstration of React/Next.js utilizing Spotify 
 
 
 
-🚀 Live See the application live here: https://your-deployed-app-url.com
+🚀 Live See the application live here: https://spotify-1-lake.vercel.app/
 
 ✨ Features Key Feature 1: Fully responsive design ensures seamless experience across all devices. 
 
-🛠️ Technologies Used Frontend: React Native HTML5 Tailwind CSS or Styled Components JavaScript (ES6+)
+🛠️ Technologies Used Frontend: React with Next.JS, Styled Components using Tailwind CSS
 
-React Router Dom (for client-side routing) Redux for state management UI libraries: React Native Elements UI. Backend Mapbox API Platform: Node.js, Supabase: Authentication, Scooter Locations, Ride Tracking.
+React Router Dom (for client-side routing) Redux for state management UI libraries: 
 
 APIs Integrated:
 
-Mapbox: Netlify (or Vercel/Firebase Hosting/AWS Amplify): To Follow. Version Control: Git GitHub ⚙️ Installation & Local Setup Follow these steps to get a copy of the project running on your local machine for development and testing purposes.
+Spotify Developer API 
+User Authentication
+
+Spotify + NextAuth to persist user's logged in state!( including how to use access & refresh oAuth
+JWT Tokens.
+Middleware to handle authenticated user access!
+
+Recoil for state management (When swithching playlists and songs).
+
+🛠️ Version Control: Git GitHub 
+
+⚙️ Installation & Local Setup Follow these steps to get a copy of the project running on your local machine for development and testing purposes.
 
 Clone the repository: Bash
 
